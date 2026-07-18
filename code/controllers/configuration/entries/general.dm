@@ -440,6 +440,24 @@
 
 /datum/config_entry/string/adminhelp_webhook_name
 
+// Translates player-entered living speech through a local OpenAI-compatible service.
+/datum/config_entry/flag/speech_translation_enabled
+
+/datum/config_entry/string/speech_translation_endpoint
+	config_entry_value = "http://127.0.0.1:9504/v1/chat/completions"
+
+/datum/config_entry/string/speech_translation_model
+	config_entry_value = "translategemma"
+
+/datum/config_entry/string/speech_translation_target_language
+	config_entry_value = "Arabic"
+
+// Maximum time, in deciseconds, to wait for a translation before sending the original speech.
+/datum/config_entry/number/speech_translation_timeout
+	config_entry_value = 50
+	min_val = 1
+	max_val = 300
+
 /datum/config_entry/flag/cache_assets
 	default = TRUE
 

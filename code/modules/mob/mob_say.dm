@@ -13,7 +13,7 @@
 	//queue this message because verbs are scheduled to process after SendMaps in the tick and speech is pretty expensive when it happens.
 	//by queuing this for next tick the mc can compensate for its cost instead of having speech delay the start of the next tick
 	if(message)
-		QUEUE_OR_CALL_VERB_FOR(VERB_CALLBACK(src, /atom/movable/proc/say, message), SSspeech_controller)
+		QUEUE_OR_CALL_VERB_FOR(VERB_CALLBACK(src, /mob/proc/say_from_player, message), SSspeech_controller)
 
 ///Whisper verb
 /mob/verb/whisper_verb(message as text)
@@ -25,11 +25,19 @@
 		to_chat(usr, span_danger("Whisper is currently disabled."))
 		return
 	if(message)
-		QUEUE_OR_CALL_VERB_FOR(VERB_CALLBACK(src, /mob/proc/whisper, message), SSspeech_controller)
+		QUEUE_OR_CALL_VERB_FOR(VERB_CALLBACK(src, /mob/proc/whisper_from_player, message), SSspeech_controller)
+
+/// Marks speech dispatched from the Say verb as player-entered.
+/mob/proc/say_from_player(message)
+	say(message, player_entered = TRUE)
+
+/// Marks speech dispatched from the Whisper verb as player-entered.
+/mob/proc/whisper_from_player(message)
+	whisper(message, player_entered = TRUE)
 
 ///whisper a message
-/mob/proc/whisper(message, datum/language/language=null)
-	say(message, language = language)
+/mob/proc/whisper(message, datum/language/language=null, player_entered = FALSE)
+	say(message, language = language, player_entered = player_entered)
 
 ///The me emote verb
 /mob/verb/me_verb(message as text)

@@ -1,5 +1,26 @@
 GLOBAL_LIST_INIT(department_radio_prefixes, list(":", "."))
 
+/// Rate-limits translation failures so an unavailable local service does not flood game logs.
+/proc/log_speech_translation_failure(reason)
+	var/static/next_log_time = 0
+	if(world.time < next_log_time)
+		return
+	next_log_time = world.time + 600
+	log_game("Speech translation failed ([reason]); using original speech.")
+
+/// Keeps question/yell rendering and speech bubbles tied to the player's entered punctuation.
+/proc/preserve_speech_terminal_punctuation(original_message, translated_message)
+	var/original_ending = copytext_char(original_message, -1)
+	var/translated_ending = copytext_char(translated_message, -1)
+	var/translation_has_terminal_punctuation = translated_ending == "?" || translated_ending == "!" || translated_ending == "\u061F" || translated_ending == "\uFF01"
+	if(original_ending == "?" || original_ending == "!")
+		if(translation_has_terminal_punctuation)
+			translated_message = copytext_char(translated_message, 1, -1)
+		return "[translated_message][original_ending]"
+	if(translation_has_terminal_punctuation)
+		return copytext_char(translated_message, 1, -1)
+	return translated_message
+
 GLOBAL_LIST_INIT(department_radio_keys, list(
 	// Location
 	MODE_KEY_R_HAND = MODE_R_HAND,
@@ -71,6 +92,78 @@ GLOBAL_LIST_INIT(message_modes_stat_limits, list(
 	MODE_MAFIA = HARD_CRIT
 ))
 
+/mob/living
+	/// Monotonic sequence values serialize translations from this speaker without blocking other speakers.
+	var/speech_translation_sequence = 0
+	var/speech_translation_next_sequence = 1
+
+/mob/living/proc/translate_live_player_speech(message)
+	var/sequence = ++speech_translation_sequence
+	while(sequence != speech_translation_next_sequence)
+		sleep(1)
+
+	var/translated_message = message
+	if(CONFIG_GET(flag/speech_translation_enabled))
+		var/timeout = CONFIG_GET(number/speech_translation_timeout)
+		var/list/request_data = list(
+			"model" = CONFIG_GET(string/speech_translation_model),
+			"messages" = list(
+				list("role" = "system", "content" = "Translate the player's speech into [CONFIG_GET(string/speech_translation_target_language)]. Return only the translation, without explanations, quotes, or prefixes."),
+				list("role" = "user", "content" = message)
+			),
+			"temperature" = 0,
+			"stream" = FALSE
+		)
+		var/list/headers = list("Content-Type" = "application/json")
+		var/datum/http_request/request = new()
+		request.prepare(RUSTG_HTTP_METHOD_POST, CONFIG_GET(string/speech_translation_endpoint), json_encode(request_data), headers, null, CEILING(timeout / 10, 1))
+		request.begin_async()
+
+		var/deadline = world.time + timeout
+		var/timed_out = FALSE
+		while(!request.is_complete())
+			if(world.time >= deadline)
+				timed_out = TRUE
+				log_speech_translation_failure("timed out")
+				break
+			sleep(1)
+
+		if(timed_out)
+			// The async request may finish later, but the original speech must not wait for it.
+			translated_message = message
+		else
+			var/datum/http_response/response = request.into_response()
+			if(response.errored)
+				log_speech_translation_failure("network error")
+			else if(response.status_code < 200 || response.status_code >= 300)
+				log_speech_translation_failure("HTTP status [response.status_code]")
+			else
+				var/list/response_data
+				try
+					response_data = json_decode(response.body)
+				catch
+					log_speech_translation_failure("malformed JSON response")
+				if(islist(response_data))
+					var/list/choices = response_data["choices"]
+					var/list/choice = islist(choices) && length(choices) ? choices[1] : null
+					var/list/response_message = islist(choice) ? choice["message"] : null
+					var/content = islist(response_message) ? response_message["content"] : null
+					if(choice?["finish_reason"] == "length")
+						log_speech_translation_failure("truncated response")
+					else if(istext(content))
+						content = trim(copytext_char(sanitize(trim(content)), 1, MAX_MESSAGE_LEN))
+						if(content)
+							translated_message = preserve_speech_terminal_punctuation(message, content)
+						else
+							log_speech_translation_failure("empty response")
+					else
+						log_speech_translation_failure("malformed response")
+				else
+					log_speech_translation_failure("malformed response")
+
+	speech_translation_next_sequence++
+	return translated_message
+
 /mob/living/proc/Ellipsis(original_msg, chance = 50, keep_words)
 	if(chance <= 0)
 		return "..."
@@ -93,7 +186,7 @@ GLOBAL_LIST_INIT(message_modes_stat_limits, list(
 
 	return new_msg
 
-/mob/living/say(message, bubble_type,list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = null)
+/mob/living/say(message, bubble_type,list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = null, player_entered = FALSE)
 	var/ic_blocked = FALSE
 	if(client && !forced && CHAT_FILTER_CHECK(message))
 		//The filter doesn't act on the sanitized message, but the raw message.
@@ -194,6 +287,10 @@ GLOBAL_LIST_INIT(message_modes_stat_limits, list(
 		message = uppertext(message)
 	if(!message)
 		return
+
+	// Say and Whisper verbs explicitly mark player input. Programmatic, forced, dead, admin, and emote speech has already returned above.
+	if(player_entered && client && !forced)
+		message = translate_live_player_speech(message)
 
 	spans |= speech_span
 
@@ -412,7 +509,7 @@ GLOBAL_LIST_INIT(message_modes_stat_limits, list(
 	else
 		. = ..()
 
-/mob/living/whisper(message, bubble_type, list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = FALSE, filterproof)
+/mob/living/whisper(message, bubble_type, list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = FALSE, filterproof, player_entered = FALSE)
 	if(!message)
 		return
-	say("#[message]", bubble_type, spans, sanitize, language, ignore_spam, forced, filterproof)
+	say("#[message]", bubble_type, spans, sanitize, language, ignore_spam, forced, player_entered = player_entered)

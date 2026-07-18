@@ -132,3 +132,13 @@ ENABLE_DEFERRED_CAVE_GENERATION
 
 ## Uncomment this to enable chatter sound
 #ENABLE_CHATTER
+
+## LIVE PLAYER-SPEECH TRANSLATION ###
+## Translates only speech entered through the Say and Whisper verbs. Set ENABLED to 0 or comment it out to opt out.
+## The local service must provide an OpenAI-compatible /v1/chat/completions endpoint.
+#SPEECH_TRANSLATION_ENABLED 1
+#SPEECH_TRANSLATION_ENDPOINT http://127.0.0.1:9504/v1/chat/completions
+#SPEECH_TRANSLATION_MODEL translategemma
+#SPEECH_TRANSLATION_TARGET_LANGUAGE Arabic
+## Maximum wait in deciseconds; original speech is sent if the service does not respond in time.
+#SPEECH_TRANSLATION_TIMEOUT 50

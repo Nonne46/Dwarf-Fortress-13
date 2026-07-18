@@ -320,6 +320,28 @@
 	message_admins("[key_name_admin(usr)] toggled OOC.")
 	SSblackbox.record_feedback("nested tally", "admin_toggle", 1, list("Toggle OOC", "[GLOB.ooc_allowed ? "Enabled" : "Disabled"]")) //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
+/datum/admins/proc/set_speech_translation_language()
+	set category = "Server"
+	set name = "Set Speech Translation Language"
+	set desc = "Changes the target language for new live speech translations."
+	if(!check_rights(R_SERVER))
+		return
+
+	var/target_language = input(usr, "Enter the target language for live player-speech translation.", "Speech Translation Language", CONFIG_GET(string/speech_translation_target_language)) as text|null
+	if(isnull(target_language))
+		return
+	target_language = trim(target_language)
+	if(!target_language)
+		to_chat(usr, span_warning("Translation target language cannot be empty."), confidential = TRUE)
+		return
+	if(!CONFIG_SET(string/speech_translation_target_language, target_language))
+		to_chat(usr, span_warning("Unable to set the translation target language."), confidential = TRUE)
+		return
+
+	log_admin("[key_name(usr)] changed the speech translation target language to [target_language].")
+	message_admins("[key_name_admin(usr)] changed the speech translation target language to [target_language].")
+	SSblackbox.record_feedback("tally", "admin_verb", 1, "Set Speech Translation Language")
+
 /datum/admins/proc/toggleoocdead()
 	set category = "Server"
 	set desc="Toggle dis bitch"

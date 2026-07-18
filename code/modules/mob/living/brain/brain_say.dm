@@ -1,4 +1,4 @@
-/mob/living/brain/say(message, bubble_type, list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = null)
+/mob/living/brain/say(message, bubble_type, list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = null, player_entered = FALSE)
 	if(prob(emp_damage*4))
 		if(prob(10))//10% chane to drop the message entirely
 			return

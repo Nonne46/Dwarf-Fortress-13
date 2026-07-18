@@ -22,7 +22,7 @@ GLOBAL_LIST_INIT(freqtospan, list(
 	"[FREQ_YOHEI]" = "yoheiradio"
 	))
 
-/atom/movable/proc/say(message, bubble_type, list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = null)
+/atom/movable/proc/say(message, bubble_type, list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = null, player_entered = FALSE)
 	if(!can_speak())
 		return
 	if(message == "" || !message)
