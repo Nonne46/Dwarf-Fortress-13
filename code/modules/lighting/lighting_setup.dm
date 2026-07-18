@@ -9,4 +9,3 @@
 				continue
 			new/datum/lighting_object(T)
 			CHECK_TICK
-		CHECK_TICK

@@ -5,7 +5,7 @@
 
 /datum/map_config
 	// Metadata
-	var/config_filename = "_maps/df_small.json"
+	var/config_filename = "_maps/df.json"
 	var/defaulted = TRUE  // set to FALSE by LoadConfig() succeeding
 	// Config from maps.txt
 	var/config_max_users = 0
@@ -16,7 +16,7 @@
 	// Config actually from the JSON - should default to Meta
 	var/map_name = "Fortress"
 	var/map_path = "map_files/Fortress"
-	var/map_file = "Fortress_small.dmm"
+	var/map_file = "Fortress.dmm"
 
 	var/traits = null
 

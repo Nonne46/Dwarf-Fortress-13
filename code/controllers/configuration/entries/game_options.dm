@@ -99,6 +99,9 @@
 
 /datum/config_entry/flag/enable_generation
 
+// Opt-in B2a deferred cave terrain; disabled keeps legacy synchronous mapgen.
+/datum/config_entry/flag/enable_deferred_cave_generation
+
 /datum/config_entry/keyed_list/multiplicative_movespeed
 	key_mode = KEY_MODE_TYPE
 	value_mode = VALUE_MODE_NUM

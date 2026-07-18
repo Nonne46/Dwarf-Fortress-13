@@ -124,8 +124,11 @@ BOMBCAP 20
 ## Whether native FoV is enabled for all people.
 #NATIVE_FOV
 
-## Uncomment this to enable world gen
-#ENABLE_GENERATION
+## Enable production world generation.
+ENABLE_GENERATION
+
+## Enable deferred DFCP1 cave terrain (requires ENABLE_GENERATION).
+ENABLE_DEFERRED_CAVE_GENERATION
 
 ## Uncomment this to enable chatter sound
 #ENABLE_CHATTER

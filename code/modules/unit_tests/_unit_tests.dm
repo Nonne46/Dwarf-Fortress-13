@@ -50,6 +50,9 @@
 #include "combat.dm"
 #include "component_tests.dm"
 #include "connect_loc.dm"
+#include "deferred_cave_decorations.dm"
+#include "deferred_cave_generation.dm"
+#include "df_chunk_protocol.dm"
 // #include "create_and_destroy.dm"
 // Disabled due to being very inconsistent with random atoms getting false positives(?) Likely due to some kind of race conditions
 #include "emoting.dm"

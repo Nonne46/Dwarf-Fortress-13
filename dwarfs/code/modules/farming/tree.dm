@@ -27,6 +27,10 @@
 
 /obj/structure/plant/tree/Initialize()
 	. = ..()
+	if(growthstage > 3)
+		density = TRUE
+	else
+		density = FALSE
 	if(small_log_amount)
 		small_log_amount = string_list(small_log_amount)
 	if(large_log_amount)

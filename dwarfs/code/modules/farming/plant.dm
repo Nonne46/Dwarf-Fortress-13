@@ -119,6 +119,7 @@
 		maxhealth = health
 	if(produced)
 		produced = string_list(produced)
+	lastcycle_growth = world.time
 	lastcycle_produce = world.time
 	lastcycle_health = world.time
 	lastcycle_eat = world.time

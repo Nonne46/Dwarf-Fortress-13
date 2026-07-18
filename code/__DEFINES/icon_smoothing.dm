@@ -37,7 +37,7 @@ DEFINE_BITFIELD(smoothing_flags, list(
 #define QUEUE_SMOOTH_NEIGHBORS(thing_to_queue) for(var/neighbor in orange(1, thing_to_queue)) {var/atom/atom_neighbor = neighbor; QUEUE_SMOOTH(atom_neighbor)}
 
 
-#define QUEUE_SMOOTH_BORDERS(thing_to_queue) if(thing_to_queue.smoothing_flags & SMOOTH_BORDERS) {SSicon_smooth.add_to_queue_border(thing_to_queue)}
+#define QUEUE_SMOOTH_BORDERS(thing_to_queue) if(SSicon_smooth.border_smooth && thing_to_queue.smoothing_flags & SMOOTH_BORDERS) {SSicon_smooth.add_to_queue_border(thing_to_queue)}
 
 #define QUEUE_SMOOTH_BORDERS_NEIGHBORS(thing_to_queue) for(var/neighbor in orange(1, thing_to_queue)) {var/atom/atom_neighbor = neighbor; QUEUE_SMOOTH_BORDERS(atom_neighbor)}
 

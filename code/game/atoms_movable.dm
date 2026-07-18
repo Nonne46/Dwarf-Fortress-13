@@ -212,6 +212,8 @@
  * * z_move_flags: bitflags used for various checks in both this proc and can_z_move(). See __DEFINES/movement.dm.
  */
 /atom/movable/proc/zMove(dir, turf/target, z_move_flags = ZMOVE_FLIGHT_FLAGS)
+	if(target && !deferred_cave_access_allowed(src, target))
+		return FALSE
 	if(!target)
 		target = can_z_move(dir, get_turf(src), null, z_move_flags)
 		if(!target)
@@ -271,6 +273,8 @@
 			if(z_move_flags & ZMOVE_FEEDBACK)
 				to_chat(rider || src, span_warning("There's nowhere to go in that direction!"))
 			return FALSE
+	if(!deferred_cave_access_allowed(src, destination))
+		return FALSE
 	if(z_move_flags & ZMOVE_FALL_CHECKS && (throwing || (movement_type & (FLYING|FLOATING))))
 		return FALSE
 	if(z_move_flags & ZMOVE_CAN_FLY_CHECKS && !(movement_type & (FLYING|FLOATING)))
@@ -795,6 +799,9 @@
 /atom/movable/proc/forceMove(atom/destination)
 	. = FALSE
 	if(destination)
+		var/turf/deferred_target = get_turf(destination)
+		if(deferred_target && !deferred_cave_access_allowed(src, deferred_target))
+			return FALSE
 		. = doMove(destination)
 	else
 		CRASH("No valid destination passed into forceMove. Moving atom: [src]")

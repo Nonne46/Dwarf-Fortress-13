@@ -50,9 +50,7 @@ SUBSYSTEM_DEF(icon_smooth)
 			can_fire = FALSE
 
 /datum/controller/subsystem/icon_smooth/Initialize()
-	for(var/z in 2 to world.maxz)
-		smooth_zlevel(z, TRUE)
-
+	// Atoms queue themselves during Initialize; avoid a full-world startup scan.
 	var/list/queue = smooth_queue
 	smooth_queue = list()
 	var/list/queue_borders = smooth_borders_queue

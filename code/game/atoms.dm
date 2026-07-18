@@ -235,8 +235,12 @@
 			smoothing_flags |= SMOOTH_OBJ
 		SET_BITFLAG_LIST(canSmoothWith)
 
+	// Queue only after smoothing groups are converted to bitflags for the initial pass.
+	QUEUE_SMOOTH(src)
+
 	ComponentInitialize()
-	InitializeAIController()
+	if(ai_controller)
+		InitializeAIController()
 
 	return INITIALIZE_HINT_NORMAL
 

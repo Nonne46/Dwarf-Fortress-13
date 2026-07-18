@@ -114,6 +114,8 @@ GLOBAL_LIST_EMPTY(station_turfs)
 		SET_BITFLAG_LIST(canSmoothWith)
 	if (smoothing_flags & (SMOOTH_CORNERS|SMOOTH_BITMASK|SMOOTH_BITMASK_SIMPLE))
 		QUEUE_SMOOTH(src)
+	// Turfs bypass /atom/Initialize, so queue their border pass here as well.
+	QUEUE_SMOOTH_BORDERS(src)
 
 	for(var/atom/movable/AM in src)
 		Entered(AM)
@@ -135,8 +137,6 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	if (opacity)
 		directional_opacity = ALL_CARDINALS
 
-	ComponentInitialize()
-
 	return INITIALIZE_HINT_NORMAL
 
 /turf/Destroy(force)
@@ -144,12 +144,13 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	if(!changing_turf)
 		stack_trace("Incorrect turf deletion")
 	changing_turf = FALSE
-	var/turf/T = SSmapping.get_turf_above(src)
-	if(T)
-		T.multiz_turf_del(src, DOWN)
-	T = SSmapping.get_turf_below(src)
-	if(T)
-		T.multiz_turf_del(src, UP)
+	if(flags_1 & INITIALIZED_1)
+		var/turf/T = SSmapping.get_turf_above(src)
+		if(T)
+			T.multiz_turf_del(src, DOWN)
+		T = SSmapping.get_turf_below(src)
+		if(T)
+			T.multiz_turf_del(src, UP)
 	if(force)
 		..()
 		//this will completely wipe turf state
@@ -266,7 +267,9 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	// So it doesn't trigger other zFall calls. Cleared on zMove.
 	falling.set_currently_z_moving(CURRENTLY_Z_FALLING)
 
-	falling.zMove(null, target, ZMOVE_CHECK_PULLEDBY)
+	if(!falling.zMove(null, target, ZMOVE_CHECK_PULLEDBY))
+		falling.set_currently_z_moving(FALSE, TRUE)
+		return FALSE
 	target.zImpact(falling, levels, src)
 	return TRUE
 
@@ -303,6 +306,8 @@ GLOBAL_LIST_EMPTY(station_turfs)
 
 //There's a lot of QDELETED() calls here if someone can figure out how to optimize this but not runtime when something gets deleted by a Bump/CanPass/Cross call, lemme know or go ahead and fix this mess - kevinz000
 /turf/Enter(atom/movable/mover, atom/oldloc)
+	if(!deferred_cave_access_allowed(mover, src))
+		return FALSE
 	// Do not call ..()
 	// Byond's default turf/Enter() doesn't have the behaviour we want with Bump()
 	// By default byond will call Bump() on the first dense object in contents

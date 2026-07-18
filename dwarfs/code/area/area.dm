@@ -5,10 +5,12 @@
 
 /area/fortress/surface
 	base_lighting_alpha = 255
+	static_lighting = FALSE
 
 /area/surface
 	name = "surface"
 	base_lighting_alpha = 255
+	static_lighting = FALSE
 
 /area/cavesgen
 	name = "Caverns"

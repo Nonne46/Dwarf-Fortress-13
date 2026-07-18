@@ -105,6 +105,7 @@ Used by the AI doomsday and the self-destruct nuke.
 	unused_turfs = SSmapping.unused_turfs
 	turf_reservations = SSmapping.turf_reservations
 	used_turfs = SSmapping.used_turfs
+	reservation_ready = SSmapping.reservation_ready
 	transit = SSmapping.transit
 	areas_in_z = SSmapping.areas_in_z
 
@@ -214,18 +215,58 @@ GLOBAL_LIST_EMPTY(the_station_areas)
 	if(!GLOB.the_station_areas.len)
 		log_world("ERROR: Station areas list failed to generate!")
 
+/datum/controller/subsystem/mapping/proc/deferred_cave_profile(datum/map_generator/gen)
+	if(istype(gen, /datum/map_generator/caves/upper))
+		return 1
+	if(istype(gen, /datum/map_generator/caves/middle_upper))
+		return 2
+	if(istype(gen, /datum/map_generator/caves/middle))
+		return 3
+	if(istype(gen, /datum/map_generator/caves/middle_bottom))
+		return 4
+	if(istype(gen, /datum/map_generator/caves/bottom))
+		return 5
+	return null
+
 /datum/controller/subsystem/mapping/proc/run_map_generation()
 	if(!CONFIG_GET(flag/enable_generation))
 		return
+	var/list/cave_levels = list()
+	var/defer_caves = CONFIG_GET(flag/enable_deferred_cave_generation) && df_chunk_protocol_compatible()
+	// Construct every generator first. A bad profile/native capability falls
+	// back as one transaction: never leave a mixed legacy/deferred cave stack.
 	for(var/z in SSmapping.levels_by_trait(ZTRAIT_GENERATOR))
 		var/generator_type = SSmapping.level_trait(z, ZTRAIT_GENERATOR)
 		if(!ispath(generator_type))
 			generator_type = text2path(generator_type)
 		var/datum/map_generator/gen = new generator_type(z)
 		map_generators["[z]"] = gen
+		if(istype(gen, /datum/map_generator/caves))
+			cave_levels["[z]"] = gen
+			if(isnull(deferred_cave_profile(gen)))
+				defer_caves = FALSE
+	if(CONFIG_GET(flag/enable_deferred_cave_generation) && !defer_caves && cave_levels.len)
+		SScave_generation.fallback_count++
+		log_world("Deferred cave generation unavailable; using legacy synchronous cave generation ([df_chunk_capabilities()])")
+	if(defer_caves && cave_levels.len)
+		var/seed = copytext(md5("[Master.random_seed].dfcp1_deferred_caves"), 1, 17)
+		SScave_generation.committed = TRUE
+		SScave_generation.seed_hex = seed
+		log_world("Deferred cave generation committed; seed=[seed], levels=[cave_levels.len]")
+		for(var/area/cavesgen/A in world)
+			A.static_lighting = FALSE
+		for(var/z_key in cave_levels)
+			var/datum/map_generator/gen = cave_levels[z_key]
+			SScave_generation.register_level(gen.z, deferred_cave_profile(gen), seed)
+	for(var/z_key in map_generators)
+		var/datum/map_generator/gen = map_generators[z_key]
+		if(defer_caves && istype(gen, /datum/map_generator/caves))
+			continue
 		gen.run_generation()
 
 /datum/controller/subsystem/mapping/proc/run_map_generation_in_z(desired_z_level)
+	if(SScave_generation?.committed && SScave_generation.levels["[desired_z_level]"])
+		return // never overwrite inert/deferred/partial cave terrain
 	var/datum/map_generator/gen = map_generators[desired_z_level]
 	if(gen)
 		gen.run_generation()
@@ -320,12 +361,13 @@ GLOBAL_LIST_EMPTY(the_station_areas)
 		CHECK_TICK
 
 /datum/controller/subsystem/mapping/proc/RequestBlockReservation(width, height, z, type = /datum/turf_reservation, turf_type_override)
-	UNTIL((!z || reservation_ready["[z]"]) && !clearing_reserved_turfs)
+	UNTIL(!clearing_reserved_turfs)
 	var/datum/turf_reservation/reserve = new type
 	if(turf_type_override)
 		reserve.turf_type = turf_type_override
 	if(!z)
 		for(var/i in levels_by_trait(ZTRAIT_RESERVED))
+			prepare_reserved_level(i)
 			if(reserve.Reserve(width, height, i))
 				return reserve
 		//If we didn't return at this point, theres a good chance we ran out of room on the exisiting reserved z levels, so lets try a new one
@@ -339,9 +381,15 @@ GLOBAL_LIST_EMPTY(the_station_areas)
 			qdel(reserve)
 			return
 		else
+			prepare_reserved_level(z)
 			if(reserve.Reserve(width, height, z))
 				return reserve
 	QDEL_NULL(reserve)
+
+/datum/controller/subsystem/mapping/proc/prepare_reserved_level(z)
+	UNTIL(!clearing_reserved_turfs)
+	if(!reservation_ready["[z]"])
+		initialize_reserved_level(z)
 
 //This is not for wiping reserved levels, use wipe_reservations() for that.
 /datum/controller/subsystem/mapping/proc/initialize_reserved_level(z)

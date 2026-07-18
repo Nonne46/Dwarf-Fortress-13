@@ -167,7 +167,7 @@ GLOBAL_VAR(surface_z)
 				if(-0.3 to 0.4)
 					continue
 				if(0.4 to INFINITY)
-					T.ChangeTurfQuick(/turf/closed/mineral/stone)
+					T.ChangeTurfQuick(/turf/closed/mineral/stone, flags=CHANGETURF_DEFER_CHANGE)
 
 	#ifdef TESTING
 	var/time = (REALTIMEOFDAY - start_timeofday) / 10
@@ -200,6 +200,12 @@ GLOBAL_VAR(surface_z)
 	log_runtime("[type].generate_rest() at z[z]: [time]s")
 	#endif
 
+/datum/map_generator/proc/set_generated_plant_growthstage(obj/structure/plant/plant, stage)
+	if(SSatoms.initialized == INITIALIZATION_INSSATOMS)
+		plant.growthstage = stage
+	else
+		plant.set_growthstage(stage)
+
 /datum/map_generator/proc/generate_wild_plants(turf/center, list/plant_types, min_plants=1, max_plants=5)
 	var/plant_type = pick(plant_types)
 	for(var/i in 1 to rand(min_plants, max_plants))
@@ -209,10 +215,9 @@ GLOBAL_VAR(surface_z)
 		if(is_blocked_turf(T))
 			continue
 		var/obj/structure/plant/plant = new plant_type(T)
-		plant.growthstage = rand(0, plant.growthstages)
+		set_generated_plant_growthstage(plant, rand(0, plant.growthstages))
 		plant.lifespan = INFINITY
 		plant.growthdelta += rand(-plant.growthdelta*0.2, plant.growthdelta*0.6)
-		plant.update_appearance(UPDATE_ICON)
 
 /datum/map_generator/surface/proc/generate_forest(turf/center)
 	if((locate(/obj/structure/plant/tree) in view(40, center)))
@@ -222,43 +227,40 @@ GLOBAL_VAR(surface_z)
 	for(var/turf/T in center_range)
 		if(prob(40))
 			continue
-		if(!T || !istype(T, /turf/open/floor/dirt) || T.is_blocked_turf() || (locate(/obj/structure/plant) in view(0, T)) || istype(T.loc, /area/fortress))
+		if(!T || !istype(T, /turf/open/floor/dirt) || T.is_blocked_turf() || (locate(/obj/structure/plant) in T) || istype(T.loc, /area/fortress))
 			continue
 		var/tree = /obj/structure/plant/tree/pine
 		if(prob(0.1))
 			tree = /obj/structure/plant/tree/apple
 		var/obj/structure/plant/tree/TR = new tree(T)
-		TR.set_growthstage(rand(1, 7))
+		set_generated_plant_growthstage(TR, rand(1, 7))
 		TR.growthdelta += rand(-10 SECONDS, 1 MINUTES)
-		TR.update_appearance(UPDATE_ICON)
 	var/mid_radius = center_radius + rand(15, 25)
 	var/list/mid_range = circlerangeturfs(center, mid_radius) - center_range
 	for(var/turf/T in mid_range)
 		if(prob(80))
 			continue
-		if(!T || !istype(T, /turf/open/floor/dirt) || T.is_blocked_turf() || (locate(/obj/structure/plant) in view(0, T)) || istype(T.loc, /area/fortress))
+		if(!T || !istype(T, /turf/open/floor/dirt) || T.is_blocked_turf() || (locate(/obj/structure/plant) in T) || istype(T.loc, /area/fortress))
 			continue
 		var/tree = /obj/structure/plant/tree/pine
 		if(prob(0.1))
 			tree = /obj/structure/plant/tree/apple
 		var/obj/structure/plant/tree/TR = new tree(T)
-		TR.set_growthstage(rand(1, 7))
+		set_generated_plant_growthstage(TR, rand(1, 7))
 		TR.growthdelta += rand(-10 SECONDS, 1 MINUTES)
-		TR.update_appearance(UPDATE_ICON)
 	var/outer_radius = mid_radius + rand(15, 25)
 	var/list/outer_range = circlerangeturfs(center, outer_radius) - center_range - mid_range
 	for(var/turf/T in outer_range)
 		if(prob(95))
 			continue
-		if(!T || !istype(T, /turf/open/floor/dirt) || T.is_blocked_turf() || (locate(/obj/structure/plant) in view(0, T)) || istype(T.loc, /area/fortress))
+		if(!T || !istype(T, /turf/open/floor/dirt) || T.is_blocked_turf() || (locate(/obj/structure/plant) in T) || istype(T.loc, /area/fortress))
 			continue
 		var/tree = /obj/structure/plant/tree/pine
 		if(prob(0.01))
 			tree = /obj/structure/plant/tree/apple
 		var/obj/structure/plant/tree/TR = new tree(T)
-		TR.growthstage = rand(1, 7)
+		set_generated_plant_growthstage(TR, rand(1, 7))
 		TR.growthdelta += rand(-10 SECONDS, 1 MINUTES)
-		TR.update_appearance(UPDATE_ICON)
 
 /datum/map_generator/caves/proc/generate_forest(turf/center)
 	if((locate(/obj/structure/plant/tree) in view(30, center)))
@@ -268,23 +270,21 @@ GLOBAL_VAR(surface_z)
 	for(var/turf/T in center_range)
 		if(prob(70))
 			continue
-		if(!T || !istype(T, /turf/open/floor/dirt) || T.is_blocked_turf() || (locate(/obj/structure/plant) in view(0, T)) || istype(T.loc, /area/fortress))
+		if(!T || !istype(T, /turf/open/floor/dirt) || T.is_blocked_turf() || (locate(/obj/structure/plant) in T) || istype(T.loc, /area/fortress))
 			continue
 		var/obj/structure/plant/tree/TR = new /obj/structure/plant/tree/towercap(T)
-		TR.set_growthstage(rand(1, 7))
+		set_generated_plant_growthstage(TR, rand(1, 7))
 		TR.growthdelta += rand(-10 SECONDS, 1 MINUTES)
-		TR.update_appearance(UPDATE_ICON)
 	var/mid_radius = center_radius + rand(10, 20)
 	var/list/mid_range = circlerangeturfs(center, mid_radius) - center_range
 	for(var/turf/T in mid_range)
 		if(prob(90))
 			continue
-		if(!T || !istype(T, /turf/open/floor/dirt) || T.is_blocked_turf() || (locate(/obj/structure/plant) in view(0, T)) || istype(T.loc, /area/fortress))
+		if(!T || !istype(T, /turf/open/floor/dirt) || T.is_blocked_turf() || (locate(/obj/structure/plant) in T) || istype(T.loc, /area/fortress))
 			continue
 		var/obj/structure/plant/tree/TR = new /obj/structure/plant/tree/towercap(T)
-		TR.set_growthstage(rand(1, 7))
+		set_generated_plant_growthstage(TR, rand(1, 7))
 		TR.growthdelta += rand(-10 SECONDS, 1 MINUTES)
-		TR.update_appearance(UPDATE_ICON)
 
 /datum/map_generator/surface/generate_turf_fauna(turf/center)
 	var/list/possible_animals = list(

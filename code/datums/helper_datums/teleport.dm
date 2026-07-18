@@ -50,6 +50,8 @@
 
 	if(!destturf || !curturf || destturf.is_transition_turf())
 		return FALSE
+	if(!deferred_cave_access_allowed(teleatom, destturf))
+		return FALSE
 
 	var/area/A = get_area(curturf)
 	var/area/B = get_area(destturf)

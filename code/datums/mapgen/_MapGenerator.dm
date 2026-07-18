@@ -33,7 +33,8 @@
 /datum/map_generator/proc/run_generation()
 	set background = 1
 	generate_turfs()
-	sleep(5)
+	// Yield cooperatively rather than imposing a fixed per-z delay.
+	CHECK_TICK
 	generate_rest()
 
 ///This proc will be ran by areas on Initialize

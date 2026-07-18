@@ -6,8 +6,19 @@
 	flags_cavein = CAVEIN_IGNORE
 
 /turf/open/genturf/New(loc, ...)
+	if(SSatoms.initialized == INITIALIZATION_INSSATOMS)
+		SHOULD_CALL_PARENT(FALSE)
+		return
+	return ..()
+
+/turf/open/genturf/Initialize(mapload)
+	if(!mapload || !isnull(Master.current_runlevel) || length(contents))
+		return ..()
 	SHOULD_CALL_PARENT(FALSE)
-	return
+	if(flags_1 & INITIALIZED_1)
+		stack_trace("Warning: [src]([type]) initialized multiple times!")
+	flags_1 |= INITIALIZED_1
+	return INITIALIZE_HINT_NORMAL
 
 /turf/open/floor/tiles
 	name = "tiled floor"

@@ -7,8 +7,12 @@
 #Ignore byond config folder.
 /cfg/
 
-# Ignore compiled linux libs in the root folder, e.g. librust_g.so
+# Ignore root-level locally built native runtimes. Source remains in its own
+# repository; deployment artifacts are copied beside the DMB but never tracked.
 /*.so
+/*.dll
+/dflib
+/rust_g
 
 #Ignore compiled files and other files generated during compilation.
 *.mdme
